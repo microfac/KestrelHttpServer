@@ -672,7 +672,15 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
             }
 
             _streams[_incomingFrame.StreamId] = _currentHeadersStream;
-            _ = _currentHeadersStream.ProcessRequestsAsync(application);
+            // Must not allow app code to block the connection handling loop.
+            System.Threading.ThreadPool.UnsafeQueueUserWorkItem(state =>
+                {
+                    var tuple = (Tuple<IHttpApplication<TContext>, Http2Stream>)state;
+                    var app = tuple.Item1;
+                    var currentStream = tuple.Item2;
+                    _ = currentStream.ProcessRequestsAsync(app);
+                },
+                new Tuple<IHttpApplication<TContext>,Http2Stream>(application, _currentHeadersStream));
         }
 
         private void ResetRequestHeaderParsingState()
