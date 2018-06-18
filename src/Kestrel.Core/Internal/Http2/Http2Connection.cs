@@ -3,14 +3,14 @@
 
 using System;
 using System.Buffers;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.IO.Pipelines;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2.HPack;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure;
@@ -673,14 +673,12 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2
 
             _streams[_incomingFrame.StreamId] = _currentHeadersStream;
             // Must not allow app code to block the connection handling loop.
-            System.Threading.ThreadPool.UnsafeQueueUserWorkItem(state =>
-                {
-                    var tuple = (Tuple<IHttpApplication<TContext>, Http2Stream>)state;
-                    var app = tuple.Item1;
-                    var currentStream = tuple.Item2;
-                    _ = currentStream.ProcessRequestsAsync(app);
-                },
-                new Tuple<IHttpApplication<TContext>,Http2Stream>(application, _currentHeadersStream));
+            ThreadPool.UnsafeQueueUserWorkItem(state =>
+            {
+                var (app, currentStream) = (Tuple<IHttpApplication<TContext>, Http2Stream>)state;
+                _ = currentStream.ProcessRequestsAsync(app);
+            },
+            new Tuple<IHttpApplication<TContext>,Http2Stream>(application, _currentHeadersStream));
         }
 
         private void ResetRequestHeaderParsingState()

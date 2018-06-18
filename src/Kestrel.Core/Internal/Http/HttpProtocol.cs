@@ -1343,7 +1343,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http
             (
                 pool: _context.MemoryPool,
                 readerScheduler: ServiceContext.Scheduler,
-                writerScheduler: PipeScheduler.ThreadPool,
+                writerScheduler: PipeScheduler.Inline,
                 pauseWriterThreshold: 1,
                 resumeWriterThreshold: 1,
                 useSynchronizationContext: false,

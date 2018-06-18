@@ -131,8 +131,8 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Tests
         {
             var inlineSchedulingPipeOptions = new PipeOptions(
                 pool: _memoryPool,
-                readerScheduler: PipeScheduler.ThreadPool,
-                writerScheduler: PipeScheduler.ThreadPool,
+                readerScheduler: PipeScheduler.Inline,
+                writerScheduler: PipeScheduler.Inline,
                 useSynchronizationContext: false
             );
 
@@ -707,15 +707,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Tests
                 ignoreNonGoAwayFrames: false,
                 expectedLastStreamId: 1,
                 expectedErrorCode: Http2ErrorCode.STREAM_CLOSED,
-                expectedErrorMessage: null);
-
-            // There's a race where either of these messages could be logged, depending on if the stream cleanup has finished yet.
-            var closedMessage = CoreStrings.FormatHttp2ErrorStreamClosed(Http2FrameType.DATA, streamId: 1);
-            var halfClosedMessage = CoreStrings.FormatHttp2ErrorStreamHalfClosedRemote(Http2FrameType.DATA, streamId: 1);
-
-            var message = Assert.Single(_logger.Messages, m => m.Exception is Http2ConnectionErrorException);
-            Assert.True(message.Exception.Message.IndexOf(closedMessage) >= 0
-                || message.Exception.Message.IndexOf(halfClosedMessage) >= 0);
+                expectedErrorMessage: CoreStrings.FormatHttp2ErrorStreamClosed(Http2FrameType.DATA, streamId: 1));
         }
 
         [Fact]
